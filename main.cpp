@@ -2,6 +2,7 @@
 #include <cmath> 
 #include <print>
 #include <iostream>
+#include <string>
 #include <vector>
 #include <unistd.h>
 #include <thread>
@@ -18,8 +19,7 @@ vector<Vec2> orb = {};
 const int TER_COLS = engine.getTerminalWidth();
 const int TER_ROWS = engine.getTerminalHeight();
 static bool sFinished = false;
-static string sDirection = "01234567";
-
+static char sDirection = '0';
 /* actual functions */
 
 
@@ -31,15 +31,30 @@ void gameLoop(vector<Vec2> &orb){
 
 	/* collision detection */
 	for (Vec2 &p : orb) {
-	    if (m[p.y][p.x]!=' ') {
-		
+	    if (m[p.y][p.x]!=' ') 
+	    { // collision with border detected!
+		/* bounce up and down for now */
+		sDirection == '0' ? 
+		    sDirection = '1' : sDirection = '0';
+		break;	
 	    }
-	} 
-	
+	}
+
 	/* draw movements */
-	for (Vec2 &p : orb) {
-	    p.y -= 1;
-	    engine.print("*", p.x, p.y);
+	switch(sDirection)
+	{
+	    case '0':
+		for (Vec2 &p : orb) {
+		    p.y -= 1;
+		    engine.print("*", p.x, p.y);
+		}
+		break;
+	    case '1':
+		for (Vec2 &p : orb) {
+		    p.y += 1;
+		    engine.print("*", p.x, p.y);
+		}
+		break;
 	}
 	
 
@@ -52,7 +67,10 @@ int main(){
     engine.setCanonicalAndCursor(0);
     engine.clearScreen();
 
-
+    // vector<vector<char>> m = engine.drawTerminalBorder();
+    // printf("m[%d][%d]\n", m.size(), m[1].size());
+    // engine.setCanonicalAndCursor(1);
+    // return 0;
 
     /* ======================== */
     
@@ -72,7 +90,6 @@ int main(){
 	angle+=0.1;
 	usleep(10000);
     }
-
 
     /* multithreading, quit loop when 'q' */
     thread worker(gameLoop, ref(orb));
