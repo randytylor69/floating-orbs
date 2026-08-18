@@ -12,52 +12,65 @@ using namespace std;
 /* OOP */
 
 Engine engine;
-vector<Vec2> orb = {};
+struct Orb{
+    float x, y, r, v_x, v_y;
+    string color;
+    Orb(float xi, float yi, float ri, float vxi, float vyi)
+	: x(xi), y(yi), r(ri), v_x(vxi), v_y(vyi){}
+};
 
 /* static vars */
 
 const int TER_COLS = engine.getTerminalWidth();
 const int TER_ROWS = engine.getTerminalHeight();
 static bool sFinished = false;
-static char sDirection = '0';
+
+
+void drawCircle(const Orb &orb, const string &color){
+    for (int y=0; y<TER_ROWS; y++){
+	for (int x=0; x<TER_COLS; x++){
+	    float distance = sqrt(pow(orb.y-y, 2) + 0.2 * pow(orb.x-x,2));
+	    /* note that shrinking distance means more space gets in */
+	    string str = color + "#";
+	    if (distance < orb.r) engine.print(str, x, y);
+	}
+    }
+    printf("\033[0m");
+
+}
+
+void updateCircle(Orb &orb){
+    orb.x += orb.v_x;
+    orb.y += orb.v_y;
+
+    if (orb.y + orb.r > TER_ROWS){
+	orb.v_y = -orb.v_y;
+    } 
+
+    if (orb.y < orb.r){
+	orb.v_y = -orb.v_y;
+    } 
+    
+    if (orb.x + orb.r > TER_COLS){
+	orb.v_x = -orb.v_x;
+    } 
+
+    if (orb.x < orb.r){
+	orb.v_x = -orb.v_x;
+    }
+}
+
 /* actual functions */
-
-
-void gameLoop(vector<Vec2> &orb){
+void gameLoop(Orb &orb1, Orb &orb2, Orb &orb3){
     while (!sFinished)
     {
 	engine.clearScreen();
-	vector<vector<char>> m = engine.drawTerminalBorder();
-
-	/* collision detection */
-	for (Vec2 &p : orb) {
-	    if (m[p.y][p.x]!=' ') 
-	    { // collision with border detected!
-		/* bounce up and down for now */
-		sDirection == '0' ? 
-		    sDirection = '1' : sDirection = '0';
-		break;	
-	    }
-	}
-
-	/* draw movements */
-	switch(sDirection)
-	{
-	    case '0':
-		for (Vec2 &p : orb) {
-		    p.y -= 1;
-		    engine.print("*", p.x, p.y);
-		}
-		break;
-	    case '1':
-		for (Vec2 &p : orb) {
-		    p.y += 1;
-		    engine.print("*", p.x, p.y);
-		}
-		break;
-	}
-	
-
+	drawCircle(orb1, "\033[93m");
+	drawCircle(orb2, "\033[35m");
+	drawCircle(orb3, "\033[92m");
+	updateCircle(orb1);
+	updateCircle(orb2);
+	updateCircle(orb3);
 	usleep(100000);
     }
 }
@@ -66,33 +79,12 @@ int main(){
     
     engine.setCanonicalAndCursor(0);
     engine.clearScreen();
-
-    // vector<vector<char>> m = engine.drawTerminalBorder();
-    // printf("m[%d][%d]\n", m.size(), m[1].size());
-    // engine.setCanonicalAndCursor(1);
-    // return 0;
-
-    /* ======================== */
+    Orb orb1(60, 10, 8, 1, 1);
+    Orb orb2(40, 20, 3, 1, 1);
+    Orb orb3(20, 10, 6, 1, 1);
     
-    float angle = 0.0;
-    float x = 0;
-    float y = 0;
-     
-    /* draw orb animation */
-    while (angle < 2 * M_PI)
-    {
-	x = cos(angle) * 20 + TER_COLS/2;
-	y = sin(angle) * 9 + TER_ROWS/2;
-	
-	orb.push_back(Vec2(round(x), round(y)));
-	engine.print("*", round(x), round(y));
-	
-	angle+=0.1;
-	usleep(10000);
-    }
-
     /* multithreading, quit loop when 'q' */
-    thread worker(gameLoop, ref(orb));
+    thread worker(gameLoop, ref(orb1), ref(orb2), ref(orb3));
     char ch;
     while(ch!='q')
     {
